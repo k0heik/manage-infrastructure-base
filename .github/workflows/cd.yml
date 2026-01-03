@@ -1,0 +1,76 @@
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: "Branch to deploy"
+        required: true
+        default: "develop"
+        type: string
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set target ref
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.target_branch }}" ]]; then
+            echo "TARGET_REF=refs/heads/${{ inputs.target_branch }}" >> "$GITHUB_ENV"
+          else
+            echo "TARGET_REF=${GITHUB_REF}" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_REF }}
+
+      - name: Set env vars
+        run: |
+          if [[ "${TARGET_REF}" == "refs/heads/main" ]]; then
+            echo "ENVIRONMENT=prod" >> "$GITHUB_ENV"
+          else
+            echo "ENVIRONMENT=dev" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install just
+        run: |
+          curl -sSfL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+      - name: Set AWS credentials
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> "$GITHUB_ENV"
+          echo "AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}" >> "$GITHUB_ENV"
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> "$GITHUB_ENV"
+
+      - name: Prepare .env
+        uses: ./.github/actions/prepare-env
+        with:
+          working-directory: .
+
+      - name: Deploy
+        run: |
+          if [[ $TARGET_REF == "refs/heads/main" ]]; then
+            echo "Deploying to production..."
+            just terraform-deploy-prod "-auto-approve"
+          else
+            echo "Deploying to dev..."
+            just terraform-deploy-dev "-auto-approve"
+          fi
+
+  report:
+    if: always()
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ needs.deploy.result }}

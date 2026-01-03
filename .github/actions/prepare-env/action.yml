@@ -1,0 +1,27 @@
+name: Prepare .env
+description: Generate .env from .env.sample with env overrides
+inputs:
+  working-directory:
+    description: Directory containing .env.sample
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f .env.sample ]; then
+          awk -F= '
+            BEGIN { OFS=FS }
+            /^[[:space:]]*#/ { print; next }
+            /^[[:space:]]*$/ { print; next }
+            {
+              key=$1
+              if (ENVIRON[key] != "") {
+                print key, ENVIRON[key]
+              } else {
+                print $0
+              }
+            }
+          ' .env.sample > .env
+        fi

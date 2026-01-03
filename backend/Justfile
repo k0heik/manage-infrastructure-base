@@ -1,0 +1,37 @@
+set dotenv-load := true
+set export := true
+set shell := ["bash", "-cu"]
+IMAGE_NAME := "backend"
+DOCKER_TAG := ":latest"
+DOCKER_PLATFORM := "linux/amd64"
+
+all: install fix lint test
+
+install:
+  uv sync --group dev
+
+lock:
+  uv lock
+
+upgrade:
+  uv sync --upgrade --group dev
+
+lint:
+  uv run ruff check .
+  uv run ruff format --check .
+
+format:
+  uv run ruff format .
+
+fix:
+  uv run ruff check --fix .
+  uv run ruff format .
+
+test:
+  uv run pytest
+
+clean:
+  rm -rf .venv .pytest_cache .ruff_cache __pycache__
+
+docker-build:
+  cd .. && DOCKER_BUILDKIT=1 docker buildx build --platform {{DOCKER_PLATFORM}} --load -f backend/Dockerfile . -t {{IMAGE_NAME}}{{DOCKER_TAG}}

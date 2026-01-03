@@ -1,0 +1,35 @@
+set dotenv-load := true
+set export := true
+set shell := ["bash", "-cu"]
+
+IMAGE_NAME := "frontend"
+DOCKER_TAG := ":latest"
+DOCKER_PLATFORM := "linux/amd64"
+
+all: install fix lint test
+
+install:
+  npm install
+
+lock:
+  npm install --package-lock-only
+
+upgrade:
+  npm update
+
+lint:
+  npm run lint
+
+format: fix
+
+fix:
+  npm run lint -- --fix
+
+test:
+  npm run test
+
+clean:
+  rm -rf node_modules .next
+
+docker-build:
+  cd .. && DOCKER_BUILDKIT=1 docker buildx build --platform {{DOCKER_PLATFORM}} --load -f frontend/Dockerfile . -t {{IMAGE_NAME}}{{DOCKER_TAG}}
