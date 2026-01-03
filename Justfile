@@ -4,7 +4,7 @@ set shell := ["bash", "-cu"]
 
 ROOT := justfile_directory()
 ENVIRONMENT := env_var_or_default("ENVIRONMENT", "dev")
-AWS_PROFILE := env_var("AWS_PROFILE")
+AWS_PROFILE := env_var_or_default("AWS_PROFILE", "default")
 
 TF_INTERACTIVE_FLAG := `test -t 0 && echo -it || true`
 TF_LOCAL_HOST_UID := `id -u`
