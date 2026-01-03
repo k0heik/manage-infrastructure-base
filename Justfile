@@ -17,27 +17,6 @@ TF_RUN_BASE := "docker run --rm " + TF_INTERACTIVE_FLAG + " -v " + ROOT + ":/wor
 TF_RUN := TF_RUN_BASE + " --env-file .env " + TF_IMAGE
 TF_TFLINT_RUN := TF_RUN_BASE + " " + TF_TFLINT_CACHE_MOUNT + " --entrypoint tflint " + TF_IMAGE
 
-SYSTEMS := "backend frontend"
-DOCKER_SYSTEMS := "backend frontend"
-
-_run target systems=SYSTEMS:
-  @for s in {{systems}}; do \
-    echo "[$s] {{target}}"; \
-    just -f $s/Justfile {{target}}; \
-  done
-  @echo "** {{target}} Finished Successfully **"
-
-all: (_run "all" SYSTEMS)
-install: (_run "install" SYSTEMS)
-lock: (_run "lock" SYSTEMS)
-upgrade: (_run "upgrade" SYSTEMS)
-lint: (_run "lint" SYSTEMS)
-format: (_run "format" SYSTEMS)
-fix: (_run "fix" SYSTEMS)
-test: (_run "test" SYSTEMS)
-clean: (_run "clean" SYSTEMS)
-docker-build: (_run "docker-build" DOCKER_SYSTEMS)
-
 terraform-docker-build:
   DOCKER_BUILDKIT=1 docker build infrastructure -t {{TF_IMAGE}}
 
