@@ -1,3 +1,1 @@
-locals {
-  system = ""
-}
+locals {}
