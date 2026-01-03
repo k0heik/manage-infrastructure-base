@@ -1,3 +1,3 @@
 locals {
-  system = "template"
+  system = ""
 }
